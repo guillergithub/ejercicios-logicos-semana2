@@ -1,6 +1,7 @@
 import fs from "fs/promises";
 import path from "path";
 import faker from "faker";
+import { json } from "express";
 
 class AcademloDb {
 
@@ -15,19 +16,55 @@ class AcademloDb {
         }
     }
 
-    static findById = id => {
-    
+    static findById =  async id => {
+        const users = await this.findAll();
+        return users.find(user => user.id === id);         
     }
 
-    static create = (obj, id) => {
-
+    static create = async (obj, id) => {
+        try {
+            let users = await this.findAll();
+            let newUser = {...obj};
+            users.push(newUser);
+            await fs.writeFile(this.dbPath, JSON.stringify(users));
+            console.log('nuevo usuario: ', newUser)
+            return newUser;
+        } catch (error) {
+            throw new Error("Hubo un error al tratar de escribir los registros de la DB");
+        }
     }
 
-    static update = (obj, id) => {
-
+    static update = async (obj, id) => {
+        try {
+            let users = await this.findAll();
+            let userIndex = users.findIndex(user => user.id === id);
+            if (userIndex !== -1) {
+                users[userIndex] = obj;            
+                await fs.writeFile(this.dbPath, JSON.stringify(users));                   
+                return obj;
+            } else {
+                throw new Error("Error al editar un usuario que no existe en los registros de la DB");
+            }
+        } catch (error) {
+            throw new Error("Hubo un error al tratar de editar los registros de la DB");
+        }
     }
 
-    static delete = id => {
+    static delete = async id => {
+        try {
+            let users = await this.findAll();
+            console.log(users.some(user => user.id === id))
+            if (users.some(user => user.id === id)) {
+                let newUsers = users.filter(user => user.id !== id);
+                await fs.writeFile(this.dbPath, JSON.stringify(newUsers));
+                return true;
+            } else {
+                return false;
+            }
+        
+        } catch (error) {
+            throw new Error("Hubo un error al tratar de eliminar un registro de la DB");
+        }
 
     }
 
